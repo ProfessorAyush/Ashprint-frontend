@@ -2,11 +2,11 @@ import React from 'react';
 
 const Timeline = () => {
   const events = [
-    { year: '2020', title: 'Project Kickoff', description: 'Initiated the Ashprint project with a vision to revolutionize printing.' },
-    { year: '2021', title: 'Development Phase', description: 'Developed core functionalities and integrated the Raspberry Pi with Python.' },
-    { year: '2022', title: 'Beta Testing', description: 'Released beta version to a select group of users for feedback and improvements.' },
-    { year: '2023', title: 'Official Launch', description: 'Launched Ashprint officially with full features and user support.' },
-    { year: '2024', title: 'Expansion', description: 'Expanding features and exploring new markets for broader reach.' },
+    { year: '2022 June', title: 'Project Kickoff', description: 'Initiated the Ashprint project with a vision to revolutionize printing.' },
+    { year: '2022 August', title: 'Development Phase', description: 'Developed core functionalities and integrated the Raspberry Pi with Python.' },
+    { year: '2022 September', title: 'Beta Testing', description: 'Released beta version to a select group of users for feedback and improvements.' },
+    { year: '2024 Soon ', title: 'Official Launch', description: 'Launched Ashprint officially with full features and user support.' },
+    { year: '2025 Soon', title: 'Expansion', description: 'Expanding features and exploring new markets for broader reach.' },
   ];
 
   return (
