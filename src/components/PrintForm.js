@@ -30,7 +30,7 @@ const PrintForm = ({ setIsFormOpen }) => {
       formDataToSend.append('file', file);
 
       try {
-        const response = await fetch('http://localhost:5000/upload', {
+        const response = await fetch('https://ashprint.onrender.com/upload', {
           method: 'POST',
           body: formDataToSend,
         });
@@ -72,7 +72,7 @@ const PrintForm = ({ setIsFormOpen }) => {
 
   const handlePay = async () => {
     try {
-      const response = await fetch('http://localhost:5000/create-order', {
+      const response = await fetch('https://ashprint.onrender.com/create-order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ const PrintForm = ({ setIsFormOpen }) => {
             };
   
             try {
-              const saveResponse = await fetch('http://localhost:5000/create-order-details', {
+              const saveResponse = await fetch('https://ashprint.onrender.com/create-order-details', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
