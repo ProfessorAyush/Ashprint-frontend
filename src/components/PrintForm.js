@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist/webpack';
 
 const PrintForm = ({ setIsFormOpen }) => {
   const [formData, setFormData] = useState({
@@ -7,12 +6,14 @@ const PrintForm = ({ setIsFormOpen }) => {
     file: null,
     printColor: 'black',
     copies: 1,
+    filePath: '', // To store the file path returned from backend
   });
   const [errorMessage, setErrorMessage] = useState('');
   const [showBilling, setShowBilling] = useState(false);
   const [totalPrice, setTotalPrice] = useState(0);
-  const [pageCount, setPageCount] = useState(0); 
+  const [pageCount, setPageCount] = useState(0);
   const [paymentDone, setPaymentDone] = useState(false);
+  const [orderID , setOrderID] = useState('');
 
   const handleChange = async (e) => {
     const { name, value, type, files } = e.target;
@@ -24,45 +25,31 @@ const PrintForm = ({ setIsFormOpen }) => {
         return;
       }
 
+      // Upload the file to the server and get page count
+      const formDataToSend = new FormData();
+      formDataToSend.append('file', file);
+
       try {
-        const pageCount = await getPageCount(file);
-        if (pageCount === 0) {
+        const response = await fetch('http://localhost:5000/upload', {
+          method: 'POST',
+          body: formDataToSend,
+        });
+
+        const data = await response.json();
+        if (data.pageCount === 0) {
           setErrorMessage('The file is corrupted. Please upload another file.');
           return;
         }
-        setPageCount(pageCount); 
-        setErrorMessage(''); 
+
+        setPageCount(data.pageCount);
+        setFormData({ ...formData, file, filePath: data.filePath }); // Store filePath
+        setErrorMessage('');
       } catch (error) {
         setErrorMessage('Error reading the PDF file. Please try again.');
-        return;
       }
-
-      setFormData({ ...formData, file });
     } else {
       setFormData({ ...formData, [name]: value });
     }
-  };
-
-  const getPageCount = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = async function (e) {
-        const arrayBuffer = e.target.result;
-        try {
-          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-          resolve(pdf.numPages); 
-        } catch (err) {
-          reject(err);
-        }
-      };
-
-      reader.onerror = function () {
-        reject(new Error('Error reading file'));
-      };
-
-      reader.readAsArrayBuffer(file);
-    });
   };
 
   const calculatePrice = (pages, copies, printColor) => {
@@ -83,9 +70,67 @@ const PrintForm = ({ setIsFormOpen }) => {
     setShowBilling(true);
   };
 
-  const handlePay = () => {
-    setPaymentDone(true);
+  const handlePay = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: totalPrice }),
+      });
+  
+      const { order_id } = await response.json();
+  
+      const options = {
+        key: 'rzp_test_unOC8OTfw4EaD3',
+        amount: totalPrice * 100,
+        currency: 'INR',
+        name: 'Ashprint',
+        description: 'Document Print Service',
+        order_id: order_id,
+        handler: async (response) => {
+          if (response.razorpay_payment_id) {
+            const orderDetails = {
+              name: formData.name,
+              filePath: formData.filePath,
+              printColor: formData.printColor,
+              copies: formData.copies,
+              totalPrice: totalPrice,
+              orderId: order_id,
+            };
+  
+            try {
+              const saveResponse = await fetch('http://localhost:5000/create-order-details', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderDetails),
+              });
+  
+              const result = await saveResponse.json();
+              setPaymentDone(true);
+  
+              // Store order ID for displaying later
+              setOrderID(order_id);
+            } catch (error) {
+              setErrorMessage('Failed to save order details.');
+            }
+          }
+        },
+        theme: {
+          color: '#3399cc',
+        },
+      };
+  
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      setErrorMessage('Payment initiation failed. Please try again.');
+    }
   };
+  
 
   const handleBack = () => {
     setShowBilling(false); 
@@ -203,29 +248,35 @@ const PrintForm = ({ setIsFormOpen }) => {
 
             <div className="flex justify-between mt-6">
               <button
+                type="button"
                 onClick={handleBack}
-                className="bg-white text-black px-6 py-3 rounded-full border border-black font-semibold hover:bg-gray-100 transition duration-300"
+                className="bg-gray-300 text-black px-6 py-3 rounded-full font-semibold hover:bg-gray-400 transition duration-300"
               >
                 Back
               </button>
               <button
+                type="button"
                 onClick={handlePay}
                 className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition duration-300"
               >
-                Pay
+                Pay Now
               </button>
             </div>
           </div>
         ) : (
           <div>
-            <h2 className="text-4xl font-extrabold mb-6 text-center">Payment Confirmation</h2>
-            <p className="text-lg text-center mb-4">Payment completed successfully! Your prints will be processed soon.</p>
-            <button
-              onClick={handleGoHome}
-              className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition duration-300"
-            >
-              Go to Home
-            </button>
+            <h2 className="text-4xl font-extrabold mb-6 text-center">Payment Successful</h2>
+            <p className="text-lg text-center">Thank you for your payment. Your print order has been placed.</p>
+            <h1>ORDER ID : {orderID}</h1>
+            <div className="mt-8 text-center">
+              <button
+                type="button"
+                onClick={handleGoHome}
+                className="bg-black text-white px-6 py-3 rounded-full font-semibold hover:bg-gray-800 transition duration-300"
+              >
+                Go Home
+              </button>
+            </div>
           </div>
         )}
       </div>
