@@ -17,58 +17,59 @@ const PrintForm = ({ setIsFormOpen }) => {
 
   const handleChange = async (e) => {
     const { name, value, type, files } = e.target;
+  
     if (type === 'file') {
       const file = files[0];
-
-      if (!file || !file.name.endsWith('.pdf')) {
-        setErrorMessage('Only PDF files are allowed.');
+  
+      // Ensure a file is selected
+      if (!file) {
+        setErrorMessage('Please upload a file.');
         return;
       }
-
-      // Upload the file to the server and get page count
+  
+      // Upload the file to the server
       const formDataToSend = new FormData();
       formDataToSend.append('file', file);
-
+  
       try {
         const response = await fetch('https://ashprint.onrender.com/upload', {
           method: 'POST',
           body: formDataToSend,
         });
-
+  
         const data = await response.json();
-        if (data.pageCount === 0) {
-          setErrorMessage('The file is corrupted. Please upload another file.');
-          return;
-        }
-
+  
+        // Store page count and file path
         setPageCount(data.pageCount);
         setFormData({ ...formData, file, filePath: data.filePath }); // Store filePath
         setErrorMessage('');
       } catch (error) {
-        setErrorMessage('Error reading the PDF file. Please try again.');
+        setErrorMessage('Error uploading the file. Please try again.');
       }
     } else {
       setFormData({ ...formData, [name]: value });
     }
   };
-
+  
   const calculatePrice = (pages, copies, printColor) => {
     const costPerPage = printColor === 'color' ? 10 : 3;
     return pages * copies * costPerPage;
   };
-
+  
   const handleSubmit = (e) => {
     e.preventDefault();
-
-    if (!formData.file || pageCount === 0) {
-      setErrorMessage('Please upload a valid PDF file.');
+  
+    // Ensure file is uploaded
+    if (!formData.file) {
+      setErrorMessage('Please upload a file before submitting.');
       return;
     }
-
+  
     const price = calculatePrice(pageCount, formData.copies, formData.printColor);
     setTotalPrice(price);
     setShowBilling(true);
   };
+  
 
   const handlePay = async () => {
     try {
@@ -243,7 +244,7 @@ const PrintForm = ({ setIsFormOpen }) => {
               <p className="text-lg"><strong>Pages:</strong> {pageCount}</p>
               <p className="text-lg"><strong>Color:</strong> {formData.printColor === 'black' ? 'Black' : 'Color'}</p>
               <p className="text-lg"><strong>Number of Copies:</strong> {formData.copies}</p>
-              <p className="text-lg"><strong>Total Price:</strong> ${totalPrice}</p>
+              <p className="text-lg"><strong>Total Price:</strong> ₹{totalPrice}</p>
             </div>
 
             <div className="flex justify-between mt-6">
